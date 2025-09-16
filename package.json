@@ -1,0 +1,34 @@
+{
+  "name": "equipaps",
+  "version": "1.0.0",
+  "description": "BDA Mines Paris PSL",
+  "main": "index.js",
+  "scripts": {
+    "start:web": "vite --host",
+    "start:api": "node --env-file=.env ./api/index.js",
+    "start": "npm run start:web & npm run start:api",
+    "build": "vite build",
+    "serve": "vite preview & npm run start:api"
+  },
+  "author": "Romain LELAIDIER",
+  "license": "MIT",
+  "devDependencies": {
+    "drizzle-kit": "^0.31.4",
+    "vite": "^7.1.5",
+    "vite-plugin-solid": "^2.11.8"
+  },
+  "dependencies": {
+    "@solidjs/meta": "^0.29.4",
+    "@solidjs/router": "^0.15.3",
+    "@tailwindcss/vite": "^4.1.13",
+    "dotenv": "^17.2.2",
+    "drizzle-orm": "^0.44.5",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.14.5",
+    "node-html-parser": "^7.0.1",
+    "solid-js": "^1.9.9",
+    "tailwindcss": "^4.1.13"
+  },
+  "type": "module"
+}
