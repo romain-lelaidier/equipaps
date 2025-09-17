@@ -220,8 +220,6 @@ async function actualizeResults(req, res, next) {
   next();
 }
 
-closeEvent({ id: "gw0ZTWPDsgILzSFF" })
-
 const authenticateJWT = (req, res, next) => {
   const token = req.headers.authorization;
   if (token) {
