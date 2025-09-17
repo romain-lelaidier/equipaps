@@ -114,7 +114,8 @@ export default function EventPage() {
                     )}
                   </For>
                 </div>
-                N'hésite pas à t'inscrire même s'il ne reste plus de place, il y a souvent des désistements.
+                N'hésite pas à t'inscrire même s'il ne reste plus de place, il y a souvent des désistements.<br/>
+                <span><b>Critères de priorité :</b> cotisants, puis nombre de sorties effectuées, puis ordre d'inscription.</span>
               </div>
               <h3 class="text-xl font-bold mt-4 mb-2">équi-PAPS</h3>
               <form onSubmit={handleSubmit} class="flex flex-col gap-3">

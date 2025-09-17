@@ -46,10 +46,14 @@ async function generateTableId(table) {
   }
 }
 
-const users = fs.readFileSync("./web/res/users.txt", "utf-8")
+const usersTable = fs.readFileSync("./api/users.txt", "utf-8")
   .split("\n")
   .map(line => line.trim())
-  .filter(line => line.length > 0);
+  .filter(line => line.length > 0)
+  .map(line => ({
+    pxx: line.replace("*", ""),
+    cotisant: line.endsWith("*"),
+  }));
 
 const eventPasswordHashed = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(process.env.EVENT_PASSWORD || ""));
 const eventPasswordHashHex = Array.from(new Uint8Array(eventPasswordHashed)).map(b => b.toString(16).padStart(2, '0')).join('');
@@ -130,6 +134,41 @@ app.post("/api/removeevent", async (req, res) => {
   res.status(200).json({ success: true });
 });
 
+async function getEventUsers(id) {
+  const users = await db
+    .select()
+    .from(schema.paps)
+    .where(eq(schema.paps.eid, id))
+    .orderBy(schema.paps.date);
+
+  var possibleUsers = {};
+  for (const user of users) {
+    if (possibleUsers[user.pxx] === undefined) {
+      possibleUsers[user.pxx] = {
+        sortiesEffectuees: await db
+          .select()
+          .from(schema.resultats)
+          .where(eq(schema.resultats.pxx, user.pxx))
+          .then(r => r.length),
+        cotisant: usersTable.find(u => u.pxx === user.pxx)?.cotisant || false,
+        date: new Date(user.date)
+      }
+    }
+  }
+
+  return Object.keys(possibleUsers).sort((a, b) => {
+    // cotisants first
+    if (possibleUsers[a].cotisant && !possibleUsers[b].cotisant) return -1;
+    if (!possibleUsers[a].cotisant && possibleUsers[b].cotisant) return 1;
+    // then by sortiesEffectuees ascending
+    if (possibleUsers[a].sortiesEffectuees < possibleUsers[b].sortiesEffectuees) return -1;
+    if (possibleUsers[a].sortiesEffectuees > possibleUsers[b].sortiesEffectuees) return 1;
+    // then by date ascending
+    if (possibleUsers[a].date < possibleUsers[b].date) return -1;
+    if (possibleUsers[a].date > possibleUsers[b].date) return 1;
+  });
+}
+
 async function fetchEvent(id) {
   const event = await db
     .select()
@@ -139,74 +178,49 @@ async function fetchEvent(id) {
 
   if (!event) return null;
   
-  const users = await db
-    .select()
-    .from(schema.paps)
-    .where(eq(schema.paps.eid, id))
-    .orderBy(schema.paps.date);
-
-  var possibleUsers = [];
-  for (const user of users) {
-    if (possibleUsers.includes(user.pxx) === false) {
-      possibleUsers.push(user.pxx);
-    }
-  }
-
-  event.users = possibleUsers;
+  event.users = await getEventUsers(id);
   return event;
 }
 
-app.get("/api/events", async (req, res) => {
+async function closeEvent(event) {
+
+  const closed = await db
+    .select()
+    .from(schema.events)
+    .where(eq(schema.events.id, event.id))
+    .then(r => r[0]?.closed);
+  if (closed) return;
+
+  const users = await getEventUsers(event.id);
+
+  await db
+    .insert(schema.resultats)
+    .values(users.map(pxx => ({ eid: event.id, pxx })));
+
+  await db
+    .update(schema.events)
+    .set({ closed: true })
+    .where(eq(schema.events.id, event.id));
+}
+
+async function actualizeResults(req, res, next) {
   const events = await db
     .select()
     .from(schema.events)
-    .orderBy(schema.events.date)
-    .where(gte(schema.events.date, new Date()));
-  
+    .where(eq(schema.events.closed, false))
+    .orderBy(schema.events.date);
+
   for (const event of events) {
-    var users = (await fetchEvent(event.id)).users || [];
-    event.places = event.participants - users.length;
-  }
-
-  res.json(events);
-});
-
-
-app.get("/api/event/:id", async (req, res) => {
-  const id = req.params.id;
-  const event = await fetchEvent(id);
-
-  if (!event) {
-    res.status(404).json({ success: false, message: "Événement introuvable" });
-    return;
-  }
-
-  var uid;
-  if (req.headers.authorization) {
-    try {
-      const decoded = jsonwebtoken.verify(req.headers.authorization, process.env.JWT_SECRET);
-      const existing = await db
-        .select()
-        .from(schema.users)
-        .where(eq(schema.users.id, decoded.uid));
-      if (existing.length > 0) uid = decoded.uid;
-    } catch (err) {
-      // invalid token
-      res.status(401).send("Requête invalide, merci de rafraîchir la page.");
-      return;
+    if (new Date() > new Date(event.date)) {
+      console.log(event)
+      await closeEvent(event);
     }
   }
 
-  if (uid == null) {
-    uid = await generateTableId(schema.users);
-    await db
-      .insert(schema.users)
-      .values({ id: uid });
-    event.token = jsonwebtoken.sign({ uid }, process.env.JWT_SECRET, { expiresIn: '7d' });
-  }
+  next();
+}
 
-  res.status(200).json(event);
-});
+closeEvent({ id: "gw0ZTWPDsgILzSFF" })
 
 const authenticateJWT = (req, res, next) => {
   const token = req.headers.authorization;
@@ -222,6 +236,46 @@ const authenticateJWT = (req, res, next) => {
     res.status(401).send("Requête invalide, merci de rafraîchir la page.");
   }
 };
+
+app.get("/api/events", actualizeResults, async (req, res) => {
+  const events = await db
+    .select()
+    .from(schema.events)
+    .orderBy(schema.events.date)
+    .where(gte(schema.events.date, new Date()));
+  
+  for (const event of events) {
+    var users = (await fetchEvent(event.id)).users || [];
+    event.places = event.participants - users.length;
+  }
+
+  res.json(events);
+});
+
+app.get("/api/event/:id", actualizeResults, async (req, res) => {
+  const id = req.params.id;
+  const event = await fetchEvent(id);
+
+  if (!event) {
+    res.status(404).json({ success: false, message: "Événement introuvable" });
+    return;
+  }
+
+  var uid;
+  if (req.user && req.user.uid) {
+    uid = req.user.uid;
+  }
+  
+  if (uid) {
+    uid = await generateTableId(schema.users);
+    await db
+      .insert(schema.users)
+      .values({ id: uid });
+    event.token = jsonwebtoken.sign({ uid }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  }
+
+  res.status(200).json(event);
+});
 
 app.post("/api/paps", authenticateJWT, async (req, res) => {
   const { eid, pxx } = req.body;
@@ -243,7 +297,7 @@ app.post("/api/paps", authenticateJWT, async (req, res) => {
     return;
   }
 
-  if (users.includes(pxx) === false) {
+  if (usersTable.find(u => u.pxx === pxx) == null) {
     res.status(400).json({ success: false, message: "Mineur inconnu" });
     return;
   }
