@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, text, datetime, int, serial, boolean } from "drizzle-orm/mysql-core";
+import { mysqlTable, varchar, text, datetime, int, boolean } from "drizzle-orm/mysql-core";
 
 export const events = mysqlTable("events", {
   id: varchar("id", { length: 16 }).notNull().primaryKey(),
@@ -12,7 +12,7 @@ export const events = mysqlTable("events", {
 });
 
 export const paps = mysqlTable("paps", {
-  id: serial("id").primaryKey(),
+  id: int("id").notNull().autoincrement().primaryKey(),
   eid: varchar("eid", { length: 16 }).notNull().references(() => events.id),
   pxx: varchar("pxx", { length: 10 }).notNull(),
   date: datetime("date").notNull(),
@@ -24,7 +24,7 @@ export const users = mysqlTable("users", {
 });
 
 export const resultats = mysqlTable("resultats", {
-  id: serial("id").primaryKey(),
+  id: int("id").notNull().autoincrement().primaryKey(),
   eid: varchar("eid", { length: 16 }).notNull().references(() => events.id),
   pxx: varchar("pxx", { length: 10 }).notNull(),
 });
