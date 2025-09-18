@@ -265,7 +265,11 @@ app.get("/api/event/:id", actualizeResults, async (req, res) => {
   if (token) {
     const decoded = jsonwebtoken.verify(token, process.env.JWT_SECRET);
     if (decoded != null && decoded.uid != null) {
-      uid = decoded.uid;
+      const existing = await db
+        .select()
+        .from(schema.users)
+        .where(eq(schema.users.id, decoded.uid));
+      if (existing.length > 0) uid = decoded.uid;
     }
   }
 
