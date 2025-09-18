@@ -260,8 +260,13 @@ app.get("/api/event/:id", actualizeResults, async (req, res) => {
   }
 
   var uid;
-  if (req.user && req.user.uid) {
-    uid = req.user.uid;
+  
+  const token = req.headers.authorization;
+  if (token) {
+    const decoded = jsonwebtoken.verify(token, process.env.JWT_SECRET);
+    if (decoded != null && decoded.uid != null) {
+      uid = decoded.uid;
+    }
   }
 
   if (!uid) {
