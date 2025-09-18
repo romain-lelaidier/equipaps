@@ -263,8 +263,8 @@ app.get("/api/event/:id", actualizeResults, async (req, res) => {
   if (req.user && req.user.uid) {
     uid = req.user.uid;
   }
-  
-  if (uid) {
+
+  if (!uid) {
     uid = await generateTableId(schema.users);
     await db
       .insert(schema.users)
