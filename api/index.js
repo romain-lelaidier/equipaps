@@ -193,9 +193,12 @@ async function closeEvent(event) {
 
   const users = await getEventUsers(event.id);
 
-  await db
-    .insert(schema.resultats)
-    .values(users.map(pxx => ({ eid: event.id, pxx })));
+  if (users.length > 0) {
+    await db
+      .insert(schema.resultats)
+      .values(users.map(pxx => ({ eid: event.id, pxx })));
+  }
+
 
   await db
     .update(schema.events)
