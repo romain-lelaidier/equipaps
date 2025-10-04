@@ -260,9 +260,10 @@ app.get("/api/event/:id", actualizeResults, async (req, res) => {
   }
 
   var uid;
-  
+
   const token = req.headers.authorization;
-  if (token) {
+
+  if (token && token != "null") {
     const decoded = jsonwebtoken.verify(token, process.env.JWT_SECRET);
     if (decoded != null && decoded.uid != null) {
       const existing = await db
