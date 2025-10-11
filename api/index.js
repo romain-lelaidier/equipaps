@@ -77,14 +77,13 @@ app.post("/api/createevent", async (req, res) => {
 });
 
 app.post("/api/editevent", async (req, res) => {
-  const { name, location, participants, description, hash, users } = req.body;
+  const { id, name, location, participants, description, hash, users } = req.body;
   if (hash !== process.env.EVENT_CREATION_HASH) {
     res.status(403).json({ success: false, message: "Mauvais mot de passe" });
     return;
   }
   const date = new Date(req.body.date);
   const paps = new Date(req.body.paps);
-  const id = req.body.id;
   if (!id) {
     res.status(400).json({ success: false, message: "ID manquant" });
     return;
@@ -113,6 +112,33 @@ app.post("/api/editevent", async (req, res) => {
       .values({ eid: id, pxx, date: new Date() });
   }
   res.status(200).json({ success: true, id });
+});
+
+app.post("/api/closeevent", async (req, res) => {
+  const { id, hash } = req.body;
+  if (hash !== process.env.EVENT_CREATION_HASH) {
+    res.status(403).json({ success: false, message: "Mauvais mot de passe" });
+    return;
+  }
+  if (!id) {
+    res.status(400).json({ success: false, message: "ID manquant" });
+    return;
+  }
+  const event = await db
+    .select()
+    .from(schema.events)
+    .where(eq(schema.events.id, id))
+    .then(r => r[0]);
+  if (!event) {
+    res.status(404).json({ success: false, message: "Événement introuvable" });
+    return;
+  }
+  try {
+    await closeEvent({ id });
+    res.status(200).json({ success: true, id });
+  } catch(err) {
+    res.status(500).send(err.toString())
+  }
 });
 
 app.post("/api/removeevent", async (req, res) => {
@@ -198,7 +224,6 @@ async function closeEvent(event) {
       .insert(schema.resultats)
       .values(users.map(pxx => ({ eid: event.id, pxx })));
   }
-
 
   await db
     .update(schema.events)
@@ -305,7 +330,7 @@ app.post("/api/paps", authenticateJWT, async (req, res) => {
     .where(eq(schema.events.id, eid))
     .then(r => r[0]);
 
-  if (eventRaw.paps > date) {
+  if (eventRaw.paps > date || eventRaw.closed) {
     res.status(400).json({ success: false, message: "Le PAPS n'est pas ouvert" });
     return;
   }

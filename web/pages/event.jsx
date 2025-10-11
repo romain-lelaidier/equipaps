@@ -117,24 +117,27 @@ export default function EventPage() {
                 N'hésite pas à t'inscrire même s'il ne reste plus de place, il y a souvent des désistements.<br/>
                 <span><b>Critères de priorité :</b> cotisants, puis nombre de sorties effectuées, puis ordre d'inscription.</span>
               </div>
-              <h3 class="text-xl font-bold mt-4 mb-2">équi-PAPS</h3>
-              <form onSubmit={handleSubmit} class="flex flex-col gap-3">
-                <input
-                  type="text"
-                  placeholder="XXnomdefamille (comme sur le portail)"
-                  value={pxx()}
-                  onInput={e => setPxx(e.target.value)}
-                  required
-                  class="border rounded p-2 w-full"
-                  list="autocomplete-list"
-                />
-                <datalist id="autocomplete-list">
-                  {users.map(word => (
-                    <option value={word} />
-                  ))}
-                </datalist>
-                <button type="submit" class="bg-vf text-white rounded p-2 font-bold">PAPS</button>
-              </form>
+
+              <Show when={!ev().closed} fallback={<h3 class="text-xl font-bold mt-4 mb-2">PAPS fermé</h3>}>
+                <h3 class="text-xl font-bold mt-4 mb-2">équi-PAPS</h3>
+                <form onSubmit={handleSubmit} class="flex flex-col gap-3">
+                  <input
+                    type="text"
+                    placeholder="XXnomdefamille (comme sur le portail)"
+                    value={pxx()}
+                    onInput={e => setPxx(e.target.value)}
+                    required
+                    class="border rounded p-2 w-full"
+                    list="autocomplete-list"
+                  />
+                  <datalist id="autocomplete-list">
+                    {users.map(word => (
+                      <option value={word} />
+                    ))}
+                  </datalist>
+                  <button type="submit" class="bg-vf text-white rounded p-2 font-bold">PAPS</button>
+                </form>
+              </Show>
             </Show>
             {status() && <div class="mt-2 text-center">{status()}</div>}
           </>

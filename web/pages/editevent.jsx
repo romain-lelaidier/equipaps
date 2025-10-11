@@ -3,6 +3,7 @@ import { MetaProvider, Title } from "@solidjs/meta";
 import { Layout } from "../components/layout";
 import { useNavigate, useParams } from "@solidjs/router";
 import { BackButton, dateForDateTimeInputValue } from "../components/utils";
+import { users } from "../res/users";
 
 async function fetchEvent(id) {
   const res = await fetch(`/api/event/${id}`);
@@ -17,12 +18,13 @@ export default function EventForm() {
   const [ev, { mutate, refetch }] = createResource(params.id, fetchEvent);
 
   const [name, setName] = createSignal("");
+  const [pxx, setPxx] = createSignal("");
   const [date, setDate] = createSignal("");
   const [paps, setPaps] = createSignal("");
   const [location, setLocation] = createSignal("");
   const [participants, setParticipants] = createSignal("");
   const [description, setDescription] = createSignal("");
-  const [users, setUsers] = createSignal([]);
+  const [pxxs, setPxxs] = createSignal([]);
   const [status, setStatus] = createSignal("");
 
   createEffect(() => {
@@ -33,7 +35,7 @@ export default function EventForm() {
       setLocation(ev().location);
       setParticipants(ev().participants);
       setDescription(ev().description);
-      setUsers(ev().users || []);
+      setPxxs(ev().users || []);
     }
   })
 
@@ -55,8 +57,8 @@ export default function EventForm() {
           location: location(),
           participants: participants(),
           description: description(),
-          users: users(),
-          hash: hashHex,
+          users: pxxs(),
+          hash: hashHex
         }),
       })).json();
       if (res.success === false) {
@@ -70,6 +72,18 @@ export default function EventForm() {
       console.log(err);
       setStatus("Erreur lors de l'enregistrement.");
     }
+  };
+
+  const handleAddUser = (e) => {
+    e.preventDefault();
+    const u = pxx();
+    if (!users.includes(u)) {
+      setStatus("Mineur inconnu, merci de bien renseigner l'identifiant du portail.");
+      return;
+    }
+    if (pxxs().includes(u)) return;
+    setPxxs(pxxs => [...pxxs, u]);
+    setPxx("");
   };
 
   const handleRemove = async (e) => {
@@ -99,6 +113,35 @@ export default function EventForm() {
       setStatus("Erreur lors de la suppression.");
     }
   };
+
+  const closeEvent = async (e) => {
+    e.preventDefault();
+    try {
+      const password = prompt("Entrez le mot de passe pour modifier l'événement :");
+      const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(password || ""));
+      const hashHex = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+      var res = await (await fetch("/api/closeevent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: params.id,
+          hash: hashHex
+        }),
+      })).json();
+
+      if (res.success === false) {
+        setStatus(res.message || "Erreur lors de la fermeture de l'événement. Merci de réessayer.");
+        return;
+      } else {
+        setStatus("Événement fermé !");
+        navigate(`/event/${res.id}`);
+      }
+    } catch (err) {
+      console.log(err);
+      setStatus("Erreur lors de l'enregistrement.");
+    }
+  }
 
   return (
     <Layout floating={true}>
@@ -146,33 +189,60 @@ export default function EventForm() {
             onInput={e => setDescription(e.target.value)}
             class="border rounded p-2"
           />
-          <label>Ouverture de l'équi-PAPS</label>
-          <input
-            type="datetime-local"
-            value={paps()}
-            onInput={e => setPaps(e.target.value)}
-            required
-            class="border rounded p-2"
-          />
-          <label>Inscrits (hors accompagnants) : cliquer sur un nom pour le retirer</label>
-          <div>
-            <For each={users()}>
-              {(user, i) => (
-                <div class="inline-block cursor-pointer" onClick={() => {
-                  const newUsers = users().filter(u => u !== user);
-                  setUsers(newUsers);
-                }}>
-                  <Show when={i() < participants()} fallback={<span class="inline-block text-sm px-2 py-1 rounded-full mr-1 mb-1 bg-rc/50 text-rf font-bold"> {user} </span>}>
-                    <span class="inline-block text-sm px-2 py-1 rounded-full mr-1 mb-1 bg-vc/30 text-vf font-bold"> {user} ✓ </span>
-                  </Show>
-                </div>
-              )}
-            </For>
+
+          <div class="flex flex-col gap-3 mb-1 bg-black/10 p-2 rounded-md">
+            <label>Ouverture de l'équi-PAPS</label>
+            <input
+              type="datetime-local"
+              value={paps()}
+              onInput={e => setPaps(e.target.value)}
+              required
+              class="border rounded p-2"
+            />
+            <label>Inscrits (hors accompagnants) : cliquer sur un nom pour le retirer</label>
+            <div>
+              <For each={pxxs()}>
+                {(user, i) => (
+                  <div class="inline-block cursor-pointer" onClick={() => setPxxs(pxxs => pxxs.filter(u => u !== user))}>
+                    <Show when={i() < participants()}
+                      fallback={<span class="inline-block text-sm px-2 py-1 rounded-full mr-1 mb-1 bg-rc/50 text-rf font-bold"> {user} </span>}
+                    >
+                      <span class="inline-block text-sm px-2 py-1 rounded-full mr-1 mb-1 bg-vc/30 text-vf font-bold"> {user} ✓ </span>
+                    </Show>
+                  </div>
+                )}
+              </For>
+            </div>
+
+            <div class="flex flex-col gap-3">
+              <input
+                type="text"
+                placeholder="XXnomdefamille (comme sur le portail)"
+                value={pxx()}
+                onInput={e => setPxx(e.target.value)}
+                onSubmit={handleAddUser}
+                class="border rounded p-2 w-full"
+                list="autocomplete-list"
+              />
+              <datalist id="autocomplete-list">
+                {users.map(word => (
+                  <option value={word} />
+                ))}
+              </datalist>
+              <button onClick={handleAddUser} class="bg-vf text-white rounded p-2 font-bold">ajouter aux PAPS</button>
+            </div>
           </div>
+
           <button type="submit" class="bg-vf text-white rounded p-2 font-bold cursor-pointer">Enregistrer</button>
         </form>
+
+        <Show when={ev() && new Date() > new Date(ev().paps)}>
+          <button type="submit" class="bg-black/60 text-white rounded p-2 mb-1 font-bold cursor-pointer" onClick={closeEvent}>Fermer le PAPS</button>
+        </Show>
+
         <button type="submit" class="bg-rf text-white rounded p-2 font-bold cursor-pointer" onClick={handleRemove}>Supprimer l'évènement</button>
         {status() && <div class="mt-2 text-center">{status()}</div>}
+
       </div>
     </Layout>
   );

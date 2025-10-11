@@ -40,8 +40,8 @@ export default function ListEventsPage() {
                 "shadow": true,
                 "p-4": true,
                 "bg-yellow-100": new Date(ev.paps) > new Date(),
-                "bg-rc": new Date(ev.paps) <= new Date() && ev.places <= 0,
-                "bg-white": new Date(ev.paps) <= new Date() && ev.places > 0,
+                "bg-rc": ev.closed || (new Date(ev.paps) <= new Date() && ev.places <= 0),
+                "bg-white": !ev.closed && (new Date(ev.paps) <= new Date() && ev.places > 0),
               }}>
                 <div class="font-bold text-lg">{ev.name}</div>
                 <div class="text-gray-700 flex flex-row items-center gap-1">
@@ -54,6 +54,7 @@ export default function ListEventsPage() {
                   {ev.participants} places
                   {mds}
                   <Switch>
+                    <Match when={ev.closed}>PAPS fermé</Match>
                     <Match when={new Date(ev.paps) > new Date()}>Ouverture du PAPS le {new Date(ev.paps).toLocaleString()}</Match>
                     <Match when={ev.places > 0}>{ev.places} restantes</Match>
                     <Match when={ev.places <= 0}>Complet</Match>
