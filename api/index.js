@@ -268,7 +268,7 @@ app.get("/api/events", actualizeResults, async (req, res) => {
     .select()
     .from(schema.events)
     .orderBy(schema.events.date)
-    .where(gte(schema.events.date, new Date()));
+    // .where(gte(schema.events.date, new Date()));
   
   for (const event of events) {
     var users = (await fetchEvent(event.id)).users || [];

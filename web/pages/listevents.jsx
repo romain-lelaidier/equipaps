@@ -7,7 +7,11 @@ import { Icon } from "../components/icons";
 async function fetchEvents() {
   const res = await fetch("/api/events");
   if (!res.ok) throw new Error("Impossible de récupérer les événements");
-  return await res.json();
+  return (await res.json()).map(ev => ({ 
+    ...ev, 
+    date: new Date(ev.date),
+    paps: new Date(ev.paps)
+  }));
 }
 
 export default function ListEventsPage() {
@@ -16,12 +20,12 @@ export default function ListEventsPage() {
   return (
     <Layout center={true}>
       <MetaProvider>
-        <Title>BDA - Evenements à venir</Title>
+        <Title>BDA - Évènements à venir</Title>
       </MetaProvider>
       <div class="mb-4">
         <BackButton/>
-        <h2 class="text-2xl font-bold">Liste des événements à venir</h2>
-        <LinkButton href="/createevent">Créer un événement (admin only)</LinkButton>
+        <h2 class="text-2xl font-bold">Évènements à venir</h2>
+        <LinkButton href="/createevent">Créer un évènement (admin only)</LinkButton>
       </div>
       
       <Show when={events.loading}>
@@ -32,16 +36,16 @@ export default function ListEventsPage() {
       </Show>
       <Show when={events() && events().length > 0} fallback={<div>Aucun événement pour le moment.</div>}>
         <div class="flex flex-col gap-4">
-          <For each={events()}>
+          <For each={events().filter(ev => ev.date > new Date()).sort((ea, eb) => ea.date - eb.date)}>
             {ev => (
               <Link href={`/event/${ev.id}`} classList={{
                 "block": true,
                 "rounded": true,
                 "shadow": true,
                 "p-4": true,
-                "bg-yellow-100": new Date(ev.paps) > new Date(),
-                "bg-rc": ev.closed || (new Date(ev.paps) <= new Date() && ev.places <= 0),
-                "bg-white": !ev.closed && (new Date(ev.paps) <= new Date() && ev.places > 0),
+                "bg-yellow-100": ev.paps > new Date(),
+                "bg-rc": ev.closed || (ev.paps <= new Date() && ev.places <= 0),
+                "bg-white": !ev.closed && (ev.paps <= new Date() && ev.places > 0),
               }}>
                 <div class="font-bold text-lg">{ev.name}</div>
                 <div class="text-gray-700 flex flex-row items-center gap-1">
@@ -49,13 +53,13 @@ export default function ListEventsPage() {
                   {ev.location}
                   <span>{mds}</span>
                   <Icon type="calendar-week" size={1}/>
-                  {new Date(ev.date).toLocaleString()}</div>
+                  {ev.date.toLocaleString()}</div>
                 <div class="text-gray-600 flex flex-row">
                   {ev.participants} places
                   {mds}
                   <Switch>
                     <Match when={ev.closed}>PAPS fermé</Match>
-                    <Match when={new Date(ev.paps) > new Date()}>Ouverture du PAPS le {new Date(ev.paps).toLocaleString()}</Match>
+                    <Match when={ev.paps > new Date()}>Ouverture du PAPS le {ev.paps.toLocaleString()}</Match>
                     <Match when={ev.places > 0}>{ev.places} restantes</Match>
                     <Match when={ev.places <= 0}>Complet</Match>
                   </Switch>
@@ -63,6 +67,25 @@ export default function ListEventsPage() {
                 <Show when={ev.description}>
                   <div class="text-sm mt-2">{ev.description}</div>
                 </Show>
+              </Link>
+            )}
+          </For>
+        </div>
+
+        <h2 class="text-xl font-bold mt-2">Évènements précédents</h2>
+
+        <div class="flex flex-col gap-4">
+          <For each={events().filter(ev => ev.date < new Date()).sort((ea, eb) => eb.date - ea.date)}>
+            {ev => (
+              <Link href={`/event/${ev.id}`} class="rounded shadow px-4 py-2 bg-rc flex flex-row gap-2">
+                <div class="font-bold text-lg">{ev.name}</div>
+                <div class="text-gray-700 flex flex-row items-center gap-1">
+                  <Icon type="location-dot" size={1}/>
+                  {ev.location}
+                  <span>{mds}</span>
+                  <Icon type="calendar-week" size={1}/>
+                  {ev.date.toLocaleDateString()}
+                </div>
               </Link>
             )}
           </For>
