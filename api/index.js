@@ -267,14 +267,16 @@ app.get("/api/event/:id", actualizeResults, async (req, res) => {
   const token = req.headers.authorization;
 
   if (token && token != "null") {
-    const decoded = jsonwebtoken.verify(token, process.env.JWT_SECRET);
-    if (decoded != null && decoded.uid != null) {
-      const existing = await db
-        .select()
-        .from(schema.users)
-        .where(eq(schema.users.id, decoded.uid));
-      if (existing.length > 0) uid = decoded.uid;
-    }
+    try {
+      const decoded = jsonwebtoken.verify(token, process.env.JWT_SECRET);
+      if (decoded != null && decoded.uid != null) {
+        const existing = await db
+          .select()
+          .from(schema.users)
+          .where(eq(schema.users.id, decoded.uid));
+        if (existing.length > 0) uid = decoded.uid;
+      }
+    } catch(err) {}
   }
 
   if (!uid) {
