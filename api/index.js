@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 import * as schema from "./db/schema.js";
 import dotenv from "dotenv";
-import { eq, gte } from "drizzle-orm";
+import { and, eq, gte } from "drizzle-orm";
 import fs from "fs";
 import jsonwebtoken from "jsonwebtoken";
 
@@ -102,14 +102,21 @@ app.post("/api/editevent", async (req, res) => {
     .set({ name, date, paps, location, participants, description })
     .where(eq(schema.events.id, id));
   // delete all paps for this event
-  await db
-    .delete(schema.paps)
-    .where(eq(schema.paps.eid, id));
-  // reinsert all paps
+  const eventUsers = await getEventUsers(id);
+  const pxxs = eventUsers.map(user => user.pxx);
+  for (const pxx of pxxs) {
+    if (!users.includes(pxx)) {
+      await db
+        .delete(schema.paps)
+        .where(and(eq(schema.paps.eid, id), eq(schema.paps.pxx, pxx)))
+    }
+  }
   for (const pxx of users) {
-    await db
-      .insert(schema.paps)
-      .values({ eid: id, pxx, date: new Date() });
+    if (!pxxs.includes(pxx)) {
+      await db
+        .insert(schema.paps)
+        .values({ eid: id, pxx, date: new Date() });
+    }
   }
   res.status(200).json({ success: true, id });
 });
@@ -182,7 +189,9 @@ async function getEventUsers(id) {
     }
   }
 
-  return Object.keys(possibleUsers).sort((a, b) => {
+  console.log(possibleUsers)
+
+  const order = Object.keys(possibleUsers).sort((a, b) => {
     // cotisants first
     if (possibleUsers[a].cotisant && !possibleUsers[b].cotisant) return -1;
     if (!possibleUsers[a].cotisant && possibleUsers[b].cotisant) return 1;
@@ -193,6 +202,8 @@ async function getEventUsers(id) {
     if (possibleUsers[a].date < possibleUsers[b].date) return -1;
     if (possibleUsers[a].date > possibleUsers[b].date) return 1;
   });
+
+  return order.map(user => ({pxx: user, ...possibleUsers[user]}))
 }
 
 async function fetchEvent(id) {

@@ -3,6 +3,7 @@ import { MetaProvider, Title } from "@solidjs/meta";
 import { Layout } from "../components/layout";
 import { useNavigate, useParams } from "@solidjs/router";
 import { BackButton, dateForDateTimeInputValue } from "../components/utils";
+import { User } from "../components/user"
 import { users } from "../res/users";
 
 async function fetchEvent(id) {
@@ -35,7 +36,7 @@ export default function EventForm() {
       setLocation(ev().location);
       setParticipants(ev().participants);
       setDescription(ev().description);
-      setPxxs(ev().users || []);
+      setPxxs(ev().users.map(user => user.pxx) || []);
     }
   })
 
@@ -204,10 +205,8 @@ export default function EventForm() {
               <For each={pxxs()}>
                 {(user, i) => (
                   <div class="inline-block cursor-pointer" onClick={() => setPxxs(pxxs => pxxs.filter(u => u !== user))}>
-                    <Show when={i() < participants()}
-                      fallback={<span class="inline-block text-sm px-2 py-1 rounded-full mr-1 mb-1 bg-rc/50 text-rf font-bold"> {user} </span>}
-                    >
-                      <span class="inline-block text-sm px-2 py-1 rounded-full mr-1 mb-1 bg-vc/30 text-vf font-bold"> {user} ✓ </span>
+                    <Show when={i() < participants()} fallback={<User user={{pxx: user}} state={0}/>}>
+                      <User user={{pxx: user}} state={1}/>
                     </Show>
                   </div>
                 )}

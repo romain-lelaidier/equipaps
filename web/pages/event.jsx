@@ -2,6 +2,7 @@ import { createEffect, createResource, createSignal, For, Show } from "solid-js"
 import { useParams } from "@solidjs/router";
 import { MetaProvider, Title } from "@solidjs/meta";
 import { Layout } from "../components/layout";
+import { User } from "../components/user"
 
 import { users } from "../res/users";
 import { BackButton, LinkButton } from "../components/utils";
@@ -108,8 +109,8 @@ export default function EventPage() {
                   </Show>
                   <For each={ev().users}>
                     {(user, i) => (
-                      <Show when={i() < ev().participants} fallback={<span class="inline-block text-sm px-2 py-1 rounded-full mr-1 mb-1 bg-rc/50 text-rf font-bold cursor-pointer"> {user} </span>}>
-                        <span class="inline-block text-sm px-2 py-1 rounded-full mr-1 mb-1 bg-vc/30 text-vf font-bold cursor-pointer"> {user} ✓ </span>
+                      <Show when={i() < ev().participants} fallback={<User user={user} state={0}/>}>
+                        <User user={user} state={1}/>
                       </Show>
                     )}
                   </For>
