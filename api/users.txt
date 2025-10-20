@@ -118,7 +118,7 @@
 25mounier
 25mrimi*
 25naudet
-25neves
+25neves*
 25normant*
 25nuban
 25joubertd*
@@ -139,7 +139,7 @@
 25sonnier*
 25soubeste
 25spada*
-25tartivel
+25tartivel*
 25thomas*
 25timmerma*
 25toledano
@@ -628,7 +628,7 @@
 22horry
 22huet
 22incacuti
-22isbled
+22isbled*
 22jaimehin
 22jing
 22jung
@@ -695,7 +695,7 @@
 22sang
 22sayde
 22segui
-22sellam
+22sellam*
 22senda
 22sghaier
 22simon
@@ -718,3 +718,5 @@
 22zhu
 xxmeyniel
 24louis
+xxpequay*
+xxbrexon*
