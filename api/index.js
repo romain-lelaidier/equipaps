@@ -116,6 +116,9 @@ app.post("/api/editevent", async (req, res) => {
       await db
         .insert(schema.paps)
         .values({ eid: id, pxx, date: new Date() });
+      await db
+        .insert(schema.hpaps)
+        .values({ eid: id, pxx, date: new Date() });
     }
   }
   res.status(200).json({ success: true, id });
@@ -376,6 +379,10 @@ app.post("/api/paps", authenticateJWT, async (req, res) => {
 
   await db
     .insert(schema.paps)
+    .values({ eid, pxx, date });
+
+  await db
+    .insert(schema.hpaps)
     .values({ eid, pxx, date });
 
   const event = await fetchEvent(eid);

@@ -28,3 +28,10 @@ export const resultats = mysqlTable("resultats", {
   eid: varchar("eid", { length: 16 }).notNull().references(() => events.id),
   pxx: varchar("pxx", { length: 10 }).notNull(),
 });
+
+export const hpaps = mysqlTable("hpaps", {
+  id: int("id").notNull().autoincrement().primaryKey(),
+  eid: varchar("eid", { length: 16 }).notNull().references(() => events.id),
+  pxx: varchar("pxx", { length: 10 }).notNull(),
+  date: datetime("date").notNull(),
+});
