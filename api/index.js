@@ -233,7 +233,7 @@ async function closeEvent(event) {
   if (users.length > 0) {
     await db
       .insert(schema.resultats)
-      .values(users.map(pxx => ({ eid: event.id, pxx })));
+      .values(users.map(user => ({ eid: event.id, pxx: user.pxx })));
   }
 
   await db
