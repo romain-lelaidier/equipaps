@@ -192,8 +192,6 @@ async function getEventUsers(id) {
     }
   }
 
-  console.log(possibleUsers)
-
   const order = Object.keys(possibleUsers).sort((a, b) => {
     // cotisants first
     if (possibleUsers[a].cotisant && !possibleUsers[b].cotisant) return -1;
@@ -254,7 +252,7 @@ async function actualizeResults(req, res, next) {
 
   for (const event of events) {
     if (new Date() > new Date(event.date)) {
-      console.log(event)
+      console.log("Closing event:", event)
       await closeEvent(event);
     }
   }
