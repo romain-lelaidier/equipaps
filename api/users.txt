@@ -131,7 +131,7 @@
 25richard*
 25rinchet*
 25rouget*
-25roy
+25roy*
 25rudant
 25salvy*
 25sidhoum
@@ -252,7 +252,7 @@
 24lazaar
 24leguevel
 24leclerc
-24lelaidie
+24lelaidie*
 24leroy
 24liens
 24ligeret
